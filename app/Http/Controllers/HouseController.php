@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\House;
 use Illuminate\Http\Request;
 
 class HouseController extends Controller
@@ -11,14 +12,34 @@ class HouseController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
+        $per_page = $request->input('per_page', 10);
+        $q = $request->input('q');
+        $price = [
+            'min' => $request->input('minPrice', 0),
+            'max'=> $request->input('maxPrice', 2000)
+        ];
+        $size = [
+            'min' => $request->input('minSize', 60),
+            'max'=> $request->input('maxSize', 300)
+        ];
 
+        $house = House::query();
+        if($q) {
+            $house->where('location', 'LIKE', '%'.$q.'%');
+        }
 
+        if($price) {
+            $house->whereBetween('price', [ $price['min'], $price['max'] ]);
+        }
 
-        return response()->json([
-            'hello' => 'hello'
-        ]);
+        if($size) {
+            $house->whereBetween('size', [ $size['min'], $size['max'] ]);
+        }
+
+        $houses = $house->paginate($per_page)->withQueryString();
+        return response()->json($houses);
     }
 
     /**

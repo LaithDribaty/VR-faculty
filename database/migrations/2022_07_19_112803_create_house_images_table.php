@@ -15,6 +15,9 @@ class CreateHouseImagesTable extends Migration
     {
         Schema::create('house_images', function (Blueprint $table) {
             $table->id();
+            $table->integer('size');
+            $table->string('url');
+            $table->foreignId('house_id')->references('id')->on('houses')->onDelete('cascade');
             $table->timestamps();
         });
     }

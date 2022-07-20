@@ -15,6 +15,9 @@ class CreateMeshsTable extends Migration
     {
         Schema::create('meshs', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('url');
+            $table->integer('size');
             $table->timestamps();
         });
     }

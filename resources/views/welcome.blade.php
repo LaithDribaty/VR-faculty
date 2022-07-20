@@ -12,7 +12,7 @@
                 background: #DAE2F8;
             }
         </style>
-
+        <link rel="shortcut icon" href="images/home-logo-favicon.png" type="image/x-icon">
     </head>
     <body class="mainbg">
 
@@ -22,7 +22,7 @@
 
             <div class="container">
 
-                <list type="houses"/>
+                <list type="houses" />
                 
             </div>
 

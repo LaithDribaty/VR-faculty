@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateHouseUserTable extends Migration
+class AddFieldsToActionEventsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,9 @@ class CreateHouseUserTable extends Migration
      */
     public function up()
     {
-        Schema::create('house_user', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('action_events', function (Blueprint $table) {
+            $table->mediumText('original')->nullable();
+            $table->mediumText('changes')->nullable();
         });
     }
 
@@ -26,6 +26,8 @@ class CreateHouseUserTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('house_user');
+        Schema::table('action_events', function (Blueprint $table) {
+            $table->dropColumn('original', 'changes');
+        });
     }
 }

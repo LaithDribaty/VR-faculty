@@ -31,6 +31,9 @@
                     <li class="nav-item col-6 col-md-auto">
                         <a class="nav-link p-2" href="" >About</a>
                     </li>
+                    <li class="nav-item col-6 col-md-auto">
+                        <a class="nav-link p-2" href="nova" >Dashboard</a>
+                    </li>
                 </ul>
             </div>
         </nav>

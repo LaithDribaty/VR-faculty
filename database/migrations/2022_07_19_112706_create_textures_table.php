@@ -15,6 +15,9 @@ class CreateTexturesTable extends Migration
     {
         Schema::create('textures', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('url');
+            $table->integer('size');
             $table->timestamps();
         });
     }

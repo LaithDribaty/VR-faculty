@@ -15,6 +15,10 @@ class CreateWallsTable extends Migration
     {
         Schema::create('walls', function (Blueprint $table) {
             $table->id();
+            $table->integer('thick');
+            $table->json('start');
+            $table->json('end');
+            $table->foreignId('house_id')->references('id')->on('houses')->onDelete('cascade');
             $table->timestamps();
         });
     }
