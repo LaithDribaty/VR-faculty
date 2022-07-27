@@ -13,6 +13,6 @@ class WallSeeder extends Seeder
      */
     public function run()
     {
-        //
+        \App\Models\Wall::factory(5)->create();
     }
 }

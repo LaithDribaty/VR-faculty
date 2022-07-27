@@ -52,7 +52,9 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'http://localhost:8000'),
+
+    'java_api_host' => env('JAVA_API_HOST', 'http://localhost:4567'),
 
     'asset_url' => env('ASSET_URL', null),
 

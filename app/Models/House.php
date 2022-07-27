@@ -9,8 +9,21 @@ class House extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'location',
+        'description',
+        'price',
+        'size',
+        'user_id'
+    ];
+
     public function user() 
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function walls()
+    {
+        return $this->hasMany(Wall::class);
     }
 }
