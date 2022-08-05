@@ -96,4 +96,15 @@ class MapController extends Controller
 
         return $this->walls($id);
     }
+
+
+
+    public function threeD($id) 
+    {
+        $house = House::find($id);
+
+        return view('three_d', [
+            'house' => $house
+        ]);
+    }
 }

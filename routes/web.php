@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/house/{id}/map', [ App\Http\Controllers\MapController::class, 'index'])->name('map');
+Route::get('/house/{id}/three-d', [ App\Http\Controllers\MapController::class, 'threeD'])->name('three-d');
 Route::post('/house/{id}/map/image', [ App\Http\Controllers\MapController::class, 'uploadImage'])->name('house.map.image');
 Route::get('/house/{id}/wall', [ App\Http\Controllers\MapController::class, 'walls'])->name('house.walls');
 Route::post('/house/{id}/wall', [ App\Http\Controllers\MapController::class, 'editWalls'])->name('house.walls.edit');

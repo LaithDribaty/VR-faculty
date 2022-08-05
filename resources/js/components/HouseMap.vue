@@ -11,6 +11,8 @@
                 <div id="WebGL-output">
 
                 </div>
+                <!-- <house-three-d :house_id="house_id" /> -->
+
             </div>
             <div class="col-3 bg-dark text-white vld-parent">
                 
@@ -92,7 +94,7 @@
     import route from '../../../vendor/tightenco/ziggy/src/js';
     import * as THREE from 'three';
     import * as OrControl from 'three/examples/jsm/controls/OrbitControls.js'
-    
+
     import Loading from 'vue-loading-overlay';
     import 'vue-loading-overlay/dist/vue-loading.css';
 
@@ -108,7 +110,6 @@
                 ],
                 stage: null,
                 wallsGroup: null,
-                objects: [],
                 deleteState: false,
                 isLoading: false
             };
@@ -142,10 +143,20 @@
                         } 
                     })
                     .then((res)=>{
-                        alert('image was saved');
+                        this.$swal(
+                            'Saved!',
+                            'image was saved',
+                            'success'
+                        )
                         event.target.classList.add('disabled');
                     })
-                    .catch(err => console.log(err))
+                    .catch(err => {
+                        this.$swal(
+                            'Error!',
+                            'try again later, we faced some error saving your image',
+                            'error'
+                        )
+                    })
                     .finally(()=>{
                         this.isLoading = false;
                     });
@@ -185,6 +196,48 @@
 
                 layer.add(this.wallsGroup);
                 this.stage.add(layer); 
+
+                // scale with wheel section
+                let scaleBy = 1.1;
+                this.stage.on('wheel', (e) => {
+                    // stop default scrolling
+                    e.evt.preventDefault();
+
+                    let oldScale = this.stage.scaleX();
+                    let pointer = this.stage.getPointerPosition();
+
+                    let mousePointTo = {
+                        x: (pointer.x - this.stage.x()) / oldScale,
+                        y: (pointer.y - this.stage.y()) / oldScale,
+                    };
+
+                    // how to scale? Zoom in? Or zoom out?
+                    let direction = e.evt.deltaY > 0 ? -1 : 1;
+
+                    let newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+                    this.stage.scale({ x: newScale, y: newScale });
+                    let newPos = {
+                        x: pointer.x - mousePointTo.x * newScale,
+                        y: pointer.y - mousePointTo.y * newScale,
+                    };
+                    this.stage.position(newPos);
+                });
+                
+                this.stage.on('click', (e)=> {
+                    e.evt.preventDefault();
+                    if (e.target.attrs.container == this.stage.attrs.container) {
+                        // if we are on empty place of the stage we will do nothing
+                        return;
+                    }
+
+                    let currentShape = e.target;
+                    if(currentShape.attrs.name == "bg")
+                        return ;
+                    if(currentShape.attrs.name == "wall-stuff")
+                        currentShape = currentShape.getParent();
+                    if(this.deleteState) 
+                        currentShape.destroy();
+                });
             },
             drawLine(p1, p2, width=3) {
                 p1.x = parseInt(p1.x);p1.y = parseInt(p1.y);
@@ -207,6 +260,9 @@
                 });
 
                 let circle1 = new Konva.Circle({x: p1.x, y: p1.y, radius: 5, draggable: true, fill: '#FFF4F4', name: 'wall-stuff'});
+                circle1.hitStrokeWidth(0);
+                circle1.shadowForStrokeEnabled(false);
+                
                 circle1.on('mouseover', function () {
                     this.fill('red');
                 });
@@ -244,7 +300,6 @@
                 renderer.domElement.style.width = "100%";
                 renderer.domElement.style.height = "100%";
 
-                const myNode = document.getElementById("foo");
                 let myWebGL = document.getElementById("WebGL-output");
                 while (myWebGL.firstChild) {
                     myWebGL.removeChild(myWebGL.lastChild);
@@ -293,7 +348,7 @@
                 }
             },
             addWall(x1, y1, x2, y2, scene) {
-                let height = 10;
+                let height = 50;
                 let thick = 3;
                 // calc length
                 let length = Math.sqrt( Math.abs(x1 - x2)*Math.abs(x1 - x2) + Math.abs(y1 - y2)*Math.abs(y1 - y2) );
@@ -329,11 +384,20 @@
                 fetch( url )
                 .then(res => res.json())
                 .then(res => {
+                    this.$swal(
+                        'Saved!',
+                        'save completed',
+                        'success'
+                    )
                     this.createWalls(res);
                     this.initiateWEBGLContainer();
                 })
                 .catch(res => {
-
+                    this.$swal(
+                        'Error!',
+                        'try again later, we faced some error saving your changes',
+                        'error'
+                    )
                 })
                 .finally(()=>{
                     this.isLoading = false;
@@ -341,41 +405,58 @@
             },
 
             saveWalls() {
-                let yes = confirm('are you sure you want to save');
-                if(!yes) return ;
+                this.$swal({
+                    title: 'are you sure you want to save?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, save changes!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        let wallsArr = [];
+                        for(let i=0; i < this.wallsGroup.children.length; ++i) {
+                            let circle1 = this.wallsGroup.children[i].children[1].absolutePosition();
+                            let circle2 = this.wallsGroup.children[i].children[2].absolutePosition();
+                            let el = {
+                                'start': circle1,
+                                'end': circle2
+                            }
+                            wallsArr.push(el);
+                        }
 
-                let wallsArr = [];
-                for(let i=0; i < this.wallsGroup.children.length; ++i) {
-                    let circle1 = this.wallsGroup.children[i].children[1].absolutePosition();
-                    let circle2 = this.wallsGroup.children[i].children[2].absolutePosition();
-                    let el = {
-                        'start': circle1,
-                        'end': circle2
+                        this.isLoading = true;
+                        fetch( route('house.walls.edit', this.house_id) ,{
+                            method: 'POST',
+                            headers: {
+                                "X-CSRF-Token": this.csrfToken
+                            },
+                            body: JSON.stringify({
+                                'walls': wallsArr
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(res => {
+                            this.$swal(
+                                'Saved!',
+                                'save completed',
+                                'success'
+                            )
+                            this.createWalls(res);
+                            this.initiateWEBGLContainer();
+                        })
+                        .catch(err => {
+                            this.$swal(
+                                'Error!',
+                                'try again later, we faced some error saving your changes',
+                                'error'
+                            )
+                        })
+                        .finally(()=>{
+                            this.isLoading = false;
+                        });
                     }
-                    wallsArr.push(el);
-                }
-
-                this.isLoading = true;
-                fetch( route('house.walls.edit', this.house_id) ,{
-                    method: 'POST',
-                    headers: {
-                        "X-CSRF-Token": this.csrfToken
-                    },
-                    body: JSON.stringify({
-                        'walls': wallsArr
-                    })
-                })
-                .then(res => res.json())
-                .then(res => {
-                    alert('save completed');
-                    this.createWalls(res);
-                    this.initiateWEBGLContainer();
-                })
-                .catch(err => {
-
-                })
-                .finally(()=>{
-                    this.isLoading = false;
                 });
             }
         },
@@ -396,58 +477,19 @@
                 this.initiateWEBGLContainer();
             })
             .catch(res => {
-                // handle error
+                this.$swal(
+                    'Error!',
+                    'try again later, we faced some error getting data',
+                    'error'
+                )
             })
             .finally(()=>{
                 this.isLoading = false;
             });
 
-            // scale with wheel section
-            let scaleBy = 1.1;
-            this.stage.on('wheel', (e) => {
-                // stop default scrolling
-                e.evt.preventDefault();
-
-                var oldScale = this.stage.scaleX();
-                var pointer = this.stage.getPointerPosition();
-
-                var mousePointTo = {
-                    x: (pointer.x - this.stage.x()) / oldScale,
-                    y: (pointer.y - this.stage.y()) / oldScale,
-                };
-
-                // how to scale? Zoom in? Or zoom out?
-                let direction = e.evt.deltaY > 0 ? -1 : 1;
-
-                var newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-                this.stage.scale({ x: newScale, y: newScale });
-                var newPos = {
-                    x: pointer.x - mousePointTo.x * newScale,
-                    y: pointer.y - mousePointTo.y * newScale,
-                };
-                this.stage.position(newPos);
-            });
-
             // document.getElementById("test").addEventListener("click", (e) => {
             //     // debug reasons remember to remove
             // });
-
-            this.stage.on('click', (e)=> {
-                e.evt.preventDefault();
-                if (e.target.attrs.container == this.stage.attrs.container) {
-                    // if we are on empty place of the stage we will do nothing
-                    return;
-                }
-
-                let currentShape = e.target;
-                if(currentShape.attrs.name == "bg")
-                    return ;
-                if(currentShape.attrs.name == "wall-stuff")
-                    currentShape = currentShape.getParent();
-                if(this.deleteState) 
-                    currentShape.destroy();
-                
-            });
         }
     };
 </script>
