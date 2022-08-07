@@ -16,7 +16,6 @@
     import * as OrControl from 'three/examples/jsm/controls/OrbitControls.js';
     import Switch from './Switch'
 
-
     export default {
         data() {
             return {
@@ -57,12 +56,24 @@
                 let ambientLight = new THREE.AmbientLight(ambiColor);
                 scene.add(ambientLight);
                 
-                const geometry = new THREE.PlaneGeometry( 10, 10 );
-                const material = new THREE.MeshBasicMaterial( {color: 0x090909, side: THREE.DoubleSide} );
+                const geometry = new THREE.PlaneGeometry( 100, 100 );
+                const material = new THREE.MeshBasicMaterial( {color: 0x595959, side: THREE.DoubleSide} );
                 const plane = new THREE.Mesh( geometry, material );
                 plane.rotation.x = Math.PI/2;
                 plane.position.set(5, 0, 5);
                 scene.add( plane );
+
+
+                const streetGeometry = new THREE.PlaneGeometry( 100, 2 );
+                const streetTexture = new THREE.TextureLoader().load( "/images/street_texture.jpg" );
+                streetTexture.wrapS = THREE.RepeatWrapping;
+                streetTexture.wrapT = THREE.RepeatWrapping;
+                streetTexture.repeat.set( 30, 1 );
+                const streetMaterial = new THREE.MeshBasicMaterial( {side: THREE.BackSide, map: streetTexture} );
+                const streetPlane = new THREE.Mesh( streetGeometry, streetMaterial );
+                streetPlane.rotation.x = Math.PI/2;
+                streetPlane.position.set(5, 0.01, -1);
+                scene.add( streetPlane );
 
                 orbit.target = new THREE.Vector3(5, 0, 5);
                 for(let i=0; i < res.length; ++i) {

@@ -8,10 +8,7 @@
                     if you want to change it please change it and re evaluate the result and
                     alter it as you wish 
                 </div>
-                <div id="WebGL-output">
-
-                </div>
-                <!-- <house-three-d :house_id="house_id" /> -->
+                <house-three-d :key="webgl_key" :house_id="house_id" />
 
             </div>
             <div class="col-3 bg-dark text-white vld-parent">
@@ -67,14 +64,6 @@
                     </button>
                 </span>
 
-                <!-- debug clear this -->
-                <!-- <span class="mx-1">
-                    <button class="btn btn-primary" id="test">
-                        test
-                    </button>
-                </span> -->
-                <!-- debug -->
-
                 <span class="mx-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-trash cursor-pointer transition-color" viewBox="0 0 16 16" @click="this.deleteState = !this.deleteState" v-bind:class="{'text-danger': this.deleteState == true, 'text-light': this.deleteState == false}">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"></path>
@@ -111,7 +100,8 @@
                 stage: null,
                 wallsGroup: null,
                 deleteState: false,
-                isLoading: false
+                isLoading: false,
+                webgl_key: 0
             };
         },
         
@@ -285,90 +275,7 @@
                 this.wallsGroup.add(group);
             },
             initiateWEBGLContainer() {
-                let scene = new THREE.Scene();
-                
-                let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1300);
-                let renderer = new THREE.WebGLRenderer();
-                renderer.setClearColor(new THREE.Color(0xffffff));
-                renderer.setSize(window.innerWidth, window.innerHeight);
-
-                camera.position.x = 500;
-                camera.position.y = 200;
-                camera.position.z = 1100;
-
-                // add the output of the renderer to the html element
-                renderer.domElement.style.width = "100%";
-                renderer.domElement.style.height = "100%";
-
-                let myWebGL = document.getElementById("WebGL-output");
-                while (myWebGL.firstChild) {
-                    myWebGL.removeChild(myWebGL.lastChild);
-                }
-                myWebGL.appendChild(renderer.domElement);
-
-                let orbit = new OrControl.OrbitControls(camera, renderer.domElement);
-
-                let ambiColor = "#1c1c1c";
-                let ambientLight = new THREE.AmbientLight(ambiColor);
-                scene.add(ambientLight);
-
-                let directionalLight = new THREE.DirectionalLight(0xf3f3f3);
-                directionalLight.position.set(20, 40, 20);
-
-                directionalLight.shadow.camera.near = 5;
-                directionalLight.shadow.camera.far = 20;
-                directionalLight.shadow.camera.left = -20;
-                directionalLight.shadow.camera.right = 20;
-                directionalLight.shadow.camera.top = 20;
-                directionalLight.shadow.camera.bottom = -20;
-                directionalLight.intensity = 1;
-                scene.add(directionalLight);
-                
-                const geometry = new THREE.PlaneGeometry( 1000, 1000 );
-                const material = new THREE.MeshBasicMaterial( {color: 0x090909, side: THREE.DoubleSide} );
-                const plane = new THREE.Mesh( geometry, material );
-                plane.rotation.x = Math.PI/2;
-                plane.position.set(500, 0, 500);
-                scene.add( plane );
-
-                orbit.target = new THREE.Vector3(500, 0, 500);
-
-                for(let i=0; i < this.wallsGroup.children.length; ++i) {
-                    let circle1 = this.wallsGroup.children[i].children[1].absolutePosition();
-                    let circle2 = this.wallsGroup.children[i].children[2].absolutePosition();
-                    this.addWall(circle1.x, circle1.y, circle2.x, circle2.y, scene);
-                }
-                
-                render();
-                function render() {
-                    orbit.update();
-                    // render using requestAnimationFrame
-                    requestAnimationFrame(render);
-                    renderer.render(scene, camera);
-                }
-            },
-            addWall(x1, y1, x2, y2, scene) {
-                let height = 50;
-                let thick = 3;
-                // calc length
-                let length = Math.sqrt( Math.abs(x1 - x2)*Math.abs(x1 - x2) + Math.abs(y1 - y2)*Math.abs(y1 - y2) );
-
-                const columnGeometry = new THREE.BoxGeometry(length, height, thick);
-                const columnMaterial = new THREE.MeshLambertMaterial({color: '#FFF4F4'});
-                const column = new THREE.Mesh(columnGeometry, columnMaterial);
-
-                // calc position
-                let position = { 
-                    'x': (x1 + x2)/2,
-                    'y': (y1 + y2)/2
-                };
-                column.position.set(position.x, height/2 , position.y);
-
-                // calc rotation
-                let teta = Math.atan2((x2-x1), (y2-y1));
-                column.rotation.set(0, teta-Math.PI/2, 0);
-
-                scene.add(column);
+                this.webgl_key++; // changing the key property of the threejs webgl component will re render it
             },
 
             regeneratePoints() {

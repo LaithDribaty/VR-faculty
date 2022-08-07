@@ -19742,7 +19742,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var konva__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! konva */ "./node_modules/konva/lib/index.js");
 /* harmony import */ var _vendor_tightenco_ziggy_src_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../vendor/tightenco/ziggy/src/js */ "./vendor/tightenco/ziggy/src/js/index.js");
-/* harmony import */ var three__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! three */ "./node_modules/three/build/three.module.js");
 /* harmony import */ var three_examples_jsm_controls_OrbitControls_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! three/examples/jsm/controls/OrbitControls.js */ "./node_modules/three/examples/jsm/controls/OrbitControls.js");
 /* harmony import */ var vue_loading_overlay__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! vue-loading-overlay */ "./node_modules/vue-loading-overlay/dist/vue-loading.min.js");
 /* harmony import */ var vue_loading_overlay__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(vue_loading_overlay__WEBPACK_IMPORTED_MODULE_3__);
@@ -19781,7 +19780,8 @@ __webpack_require__.r(__webpack_exports__);
       stage: null,
       wallsGroup: null,
       deleteState: false,
-      isLoading: false
+      isLoading: false,
+      webgl_key: 0
     };
   },
   components: {
@@ -19954,84 +19954,7 @@ __webpack_require__.r(__webpack_exports__);
       this.wallsGroup.add(group);
     },
     initiateWEBGLContainer: function initiateWEBGLContainer() {
-      var scene = new three__WEBPACK_IMPORTED_MODULE_5__.Scene();
-      var camera = new three__WEBPACK_IMPORTED_MODULE_5__.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1300);
-      var renderer = new three__WEBPACK_IMPORTED_MODULE_5__.WebGLRenderer();
-      renderer.setClearColor(new three__WEBPACK_IMPORTED_MODULE_5__.Color(0xffffff));
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.position.x = 500;
-      camera.position.y = 200;
-      camera.position.z = 1100; // add the output of the renderer to the html element
-
-      renderer.domElement.style.width = "100%";
-      renderer.domElement.style.height = "100%";
-      var myWebGL = document.getElementById("WebGL-output");
-
-      while (myWebGL.firstChild) {
-        myWebGL.removeChild(myWebGL.lastChild);
-      }
-
-      myWebGL.appendChild(renderer.domElement);
-      var orbit = new three_examples_jsm_controls_OrbitControls_js__WEBPACK_IMPORTED_MODULE_2__.OrbitControls(camera, renderer.domElement);
-      var ambiColor = "#1c1c1c";
-      var ambientLight = new three__WEBPACK_IMPORTED_MODULE_5__.AmbientLight(ambiColor);
-      scene.add(ambientLight);
-      var directionalLight = new three__WEBPACK_IMPORTED_MODULE_5__.DirectionalLight(0xf3f3f3);
-      directionalLight.position.set(20, 40, 20);
-      directionalLight.shadow.camera.near = 5;
-      directionalLight.shadow.camera.far = 20;
-      directionalLight.shadow.camera.left = -20;
-      directionalLight.shadow.camera.right = 20;
-      directionalLight.shadow.camera.top = 20;
-      directionalLight.shadow.camera.bottom = -20;
-      directionalLight.intensity = 1;
-      scene.add(directionalLight);
-      var geometry = new three__WEBPACK_IMPORTED_MODULE_5__.PlaneGeometry(1000, 1000);
-      var material = new three__WEBPACK_IMPORTED_MODULE_5__.MeshBasicMaterial({
-        color: 0x090909,
-        side: three__WEBPACK_IMPORTED_MODULE_5__.DoubleSide
-      });
-      var plane = new three__WEBPACK_IMPORTED_MODULE_5__.Mesh(geometry, material);
-      plane.rotation.x = Math.PI / 2;
-      plane.position.set(500, 0, 500);
-      scene.add(plane);
-      orbit.target = new three__WEBPACK_IMPORTED_MODULE_5__.Vector3(500, 0, 500);
-
-      for (var i = 0; i < this.wallsGroup.children.length; ++i) {
-        var circle1 = this.wallsGroup.children[i].children[1].absolutePosition();
-        var circle2 = this.wallsGroup.children[i].children[2].absolutePosition();
-        this.addWall(circle1.x, circle1.y, circle2.x, circle2.y, scene);
-      }
-
-      render();
-
-      function render() {
-        orbit.update(); // render using requestAnimationFrame
-
-        requestAnimationFrame(render);
-        renderer.render(scene, camera);
-      }
-    },
-    addWall: function addWall(x1, y1, x2, y2, scene) {
-      var height = 50;
-      var thick = 3; // calc length
-
-      var length = Math.sqrt(Math.abs(x1 - x2) * Math.abs(x1 - x2) + Math.abs(y1 - y2) * Math.abs(y1 - y2));
-      var columnGeometry = new three__WEBPACK_IMPORTED_MODULE_5__.BoxGeometry(length, height, thick);
-      var columnMaterial = new three__WEBPACK_IMPORTED_MODULE_5__.MeshLambertMaterial({
-        color: '#FFF4F4'
-      });
-      var column = new three__WEBPACK_IMPORTED_MODULE_5__.Mesh(columnGeometry, columnMaterial); // calc position
-
-      var position = {
-        'x': (x1 + x2) / 2,
-        'y': (y1 + y2) / 2
-      };
-      column.position.set(position.x, height / 2, position.y); // calc rotation
-
-      var teta = Math.atan2(x2 - x1, y2 - y1);
-      column.rotation.set(0, teta - Math.PI / 2, 0);
-      scene.add(column);
+      this.webgl_key++; // changing the key property of the threejs webgl component will re render it
     },
     regeneratePoints: function regeneratePoints() {
       var _this3 = this;
@@ -20182,15 +20105,28 @@ __webpack_require__.r(__webpack_exports__);
       var ambiColor = "#1c1c1c";
       var ambientLight = new three__WEBPACK_IMPORTED_MODULE_3__.AmbientLight(ambiColor);
       scene.add(ambientLight);
-      var geometry = new three__WEBPACK_IMPORTED_MODULE_3__.PlaneGeometry(10, 10);
+      var geometry = new three__WEBPACK_IMPORTED_MODULE_3__.PlaneGeometry(100, 100);
       var material = new three__WEBPACK_IMPORTED_MODULE_3__.MeshBasicMaterial({
-        color: 0x090909,
+        color: 0x595959,
         side: three__WEBPACK_IMPORTED_MODULE_3__.DoubleSide
       });
       var plane = new three__WEBPACK_IMPORTED_MODULE_3__.Mesh(geometry, material);
       plane.rotation.x = Math.PI / 2;
       plane.position.set(5, 0, 5);
       scene.add(plane);
+      var streetGeometry = new three__WEBPACK_IMPORTED_MODULE_3__.PlaneGeometry(100, 2);
+      var streetTexture = new three__WEBPACK_IMPORTED_MODULE_3__.TextureLoader().load("/images/street_texture.jpg");
+      streetTexture.wrapS = three__WEBPACK_IMPORTED_MODULE_3__.RepeatWrapping;
+      streetTexture.wrapT = three__WEBPACK_IMPORTED_MODULE_3__.RepeatWrapping;
+      streetTexture.repeat.set(30, 1);
+      var streetMaterial = new three__WEBPACK_IMPORTED_MODULE_3__.MeshBasicMaterial({
+        side: three__WEBPACK_IMPORTED_MODULE_3__.BackSide,
+        map: streetTexture
+      });
+      var streetPlane = new three__WEBPACK_IMPORTED_MODULE_3__.Mesh(streetGeometry, streetMaterial);
+      streetPlane.rotation.x = Math.PI / 2;
+      streetPlane.position.set(5, 0.01, -1);
+      scene.add(streetPlane);
       orbit.target = new three__WEBPACK_IMPORTED_MODULE_3__.Vector3(5, 0, 5);
 
       for (var i = 0; i < res.length; ++i) {
@@ -20606,43 +20542,42 @@ var _hoisted_1 = {
 var _hoisted_2 = {
   "class": "row"
 };
+var _hoisted_3 = {
+  "class": "col-9"
+};
 
-var _hoisted_3 = /*#__PURE__*/_withScopeId(function () {
-  return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "col-9"
-  }, [/*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, " bellow is a map of the house and its walls according to the floorplan on the right if you want to change it please change it and re evaluate the result and alter it as you wish "), /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    id: "WebGL-output"
-  }), /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" <house-three-d :house_id=\"house_id\" /> ")], -1
+var _hoisted_4 = /*#__PURE__*/_withScopeId(function () {
+  return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, " bellow is a map of the house and its walls according to the floorplan on the right if you want to change it please change it and re evaluate the result and alter it as you wish ", -1
   /* HOISTED */
   );
 });
 
-var _hoisted_4 = {
+var _hoisted_5 = {
   "class": "col-3 bg-dark text-white vld-parent"
 };
-var _hoisted_5 = {
+var _hoisted_6 = {
   "class": "p-3"
 };
-var _hoisted_6 = ["src"];
+var _hoisted_7 = ["src"];
 
-var _hoisted_7 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_8 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("hr", null, null, -1
   /* HOISTED */
   );
 });
 
-var _hoisted_8 = {
-  "class": "row"
-};
 var _hoisted_9 = {
-  "class": "col"
+  "class": "row"
 };
 var _hoisted_10 = {
   "class": "col"
 };
-var _hoisted_11 = ["onUpdate:modelValue", "name"];
+var _hoisted_11 = {
+  "class": "col"
+};
+var _hoisted_12 = ["onUpdate:modelValue", "name"];
 
-var _hoisted_12 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_13 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "w-100"
   }, null, -1
@@ -20650,18 +20585,15 @@ var _hoisted_12 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_13 = {
+var _hoisted_14 = {
   id: "stage-parent",
   "class": "shadow border border-dark bg-white vld-parent"
 };
-var _hoisted_14 = {
+var _hoisted_15 = {
   "class": "navbar navbar-light bg-dark"
 };
-var _hoisted_15 = {
-  "class": "nav-item"
-};
 var _hoisted_16 = {
-  "class": "mx-1"
+  "class": "nav-item"
 };
 var _hoisted_17 = {
   "class": "mx-1"
@@ -20669,8 +20601,11 @@ var _hoisted_17 = {
 var _hoisted_18 = {
   "class": "mx-1"
 };
+var _hoisted_19 = {
+  "class": "mx-1"
+};
 
-var _hoisted_19 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_20 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
     d: "M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"
   }, null, -1
@@ -20678,7 +20613,7 @@ var _hoisted_19 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_20 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_21 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
     "fill-rule": "evenodd",
     d: "M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
@@ -20687,9 +20622,9 @@ var _hoisted_20 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_21 = [_hoisted_19, _hoisted_20];
+var _hoisted_22 = [_hoisted_20, _hoisted_21];
 
-var _hoisted_22 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_23 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     id: "paint"
   }, null, -1
@@ -20700,9 +20635,16 @@ var _hoisted_22 = /*#__PURE__*/_withScopeId(function () {
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _this = this;
 
+  var _component_house_three_d = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("house-three-d");
+
   var _component_loading = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("loading");
 
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [_hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_loading, {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [_hoisted_4, ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_house_three_d, {
+    key: $data.webgl_key,
+    house_id: $props.house_id
+  }, null, 8
+  /* PROPS */
+  , ["house_id"]))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_loading, {
     active: $data.isLoading,
     "onUpdate:active": _cache[0] || (_cache[0] = function ($event) {
       return $data.isLoading = $event;
@@ -20711,14 +20653,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "is-full-page": false
   }, null, 8
   /* PROPS */
-  , ["active"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  , ["active"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-100",
     src: $props.image,
     alt: "",
     id: "output"
   }, null, 8
   /* PROPS */
-  , _hoisted_6), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  , _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     "class": "btn btn-primary w-100 form-control mt-3",
     type: "file",
     id: "image",
@@ -20736,15 +20678,15 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.uploadImage && $options.uploadImage.apply($options, arguments);
     }),
     id: "uploadButton"
-  }, " change "), _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, " change "), _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: _cache[3] || (_cache[3] = function () {
       return $options.regeneratePoints && $options.regeneratePoints.apply($options, arguments);
     }),
     "class": "btn btn-warning"
   }, " re generate ")]), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.img, function (item) {
-    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.index) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.value), 1
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.index) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.value), 1
     /* TEXT */
-    ), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    ), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
       "onUpdate:modelValue": function onUpdateModelValue($event) {
         return item.value = $event;
       },
@@ -20754,10 +20696,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       max: "item.max"
     }, null, 8
     /* PROPS */
-    , _hoisted_11), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, item.value]])]), _hoisted_12]);
+    , _hoisted_12), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, item.value]])]), _hoisted_13]);
   }), 256
   /* UNKEYED_FRAGMENT */
-  ))])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_loading, {
+  ))])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_loading, {
     active: $data.isLoading,
     "onUpdate:active": _cache[4] || (_cache[4] = function ($event) {
       return $data.isLoading = $event;
@@ -20766,12 +20708,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "is-full-page": false
   }, null, 8
   /* PROPS */
-  , ["active"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  , ["active"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: _cache[5] || (_cache[5] = function () {
       return $options.saveWalls && $options.saveWalls.apply($options, arguments);
     }),
     "class": "btn btn-primary"
-  }, " save walls ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, " save walls ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "btn btn-primary",
     onClick: _cache[6] || (_cache[6] = function ($event) {
       return _this.drawLine({
@@ -20782,7 +20724,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         y: 10
       });
     })
-  }, " add wall ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" debug clear this "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" <span class=\"mx-1\">\n                    <button class=\"btn btn-primary\" id=\"test\">\n                        test\n                    </button>\n                </span> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" debug "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", {
+  }, " add wall ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", {
     xmlns: "http://www.w3.org/2000/svg",
     width: "25",
     height: "25",
@@ -20795,9 +20737,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[7] || (_cache[7] = function ($event) {
       return _this.deleteState = !_this.deleteState;
     })
-  }, _hoisted_21, 2
+  }, _hoisted_22, 2
   /* CLASS */
-  ))])])]), _hoisted_22])], 64
+  ))])])]), _hoisted_23])], 64
   /* STABLE_FRAGMENT */
   );
 }
