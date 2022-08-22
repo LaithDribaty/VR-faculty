@@ -1,6 +1,6 @@
 <template>
 
-    <header class="navbar bg-dark navbar-expand-md navbar-dark bd-navbar">
+    <header class="navbar bg-dark navbar-expand-md navbar-dark bd-navbar" id="headerItem">
         <nav class="container-xxl flex-wrap flex-md-nowrap" aria-label="Main navigation">
             <a class="navbar-brand p-0 me-2" href="/" aria-label="Bootstrap">
                 <img src="/images/home-logo.png" alt="home logo" width="50" height="50">
@@ -30,6 +30,9 @@
                     </li>
                     <li class="nav-item col-6 col-md-auto">
                         <a class="nav-link p-2" href="" >About</a>
+                    </li>
+                    <li class="nav-item col-6 col-md-auto">
+                        <a class="nav-link p-2" href="/mesh/add" >Add Mesh</a>
                     </li>
                     <li class="nav-item col-6 col-md-auto">
                         <a class="nav-link p-2" href="nova" >Dashboard</a>

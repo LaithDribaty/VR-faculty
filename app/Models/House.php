@@ -26,4 +26,14 @@ class House extends Model
     {
         return $this->hasMany(Wall::class);
     }
+
+    public function objects()
+    {
+        return $this->hasMany(ObjectModel::class);
+    }
+
+    public function floors()
+    {
+        return $this->hasMany(Floor::class);
+    }
 }

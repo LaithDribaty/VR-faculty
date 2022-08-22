@@ -14,7 +14,8 @@
     import route from '../../../vendor/tightenco/ziggy/src/js';
     import * as THREE from 'three';
     import * as OrControl from 'three/examples/jsm/controls/OrbitControls.js';
-    import Switch from './Switch'
+    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+    import Switch from './Switch';
 
     export default {
         data() {
@@ -76,11 +77,80 @@
                 scene.add( streetPlane );
 
                 orbit.target = new THREE.Vector3(5, 0, 5);
-                for(let i=0; i < res.length; ++i) {
-                    let sp = JSON.parse(res[i].start);
-                    let ep = JSON.parse(res[i].end);
+
+                let walls = res.walls;
+                for(let i=0; i < walls.length; ++i) {
+                    let sp = JSON.parse(walls[i].start);
+                    let ep = JSON.parse(walls[i].end);
                     this.addWall(sp.x, sp.y, ep.x, ep.y, scene, 0.01);
                 }
+
+                const loader = new GLTFLoader();
+
+                // TO DO
+                let objects = res.objects;  
+                for(let i=0; i < objects.length; ++i) {
+                    if(objects[i].mesh_id) {
+                        // something 
+                        loader.load(
+                            // resource URL
+                            '/storage/meshes/bin/'+objects[i].meshName+'.glb',
+
+                            function ( glb ) {
+                                objects[i].position = JSON.parse(objects[i].position);
+                                glb.scene.children[0].position.set(objects[i].position.x * 0.01, 0, objects[i].position.y * 0.01);
+                                glb.scene.children[0].rotation.y = -(objects[i].rotation * Math.PI) / 180;
+                                glb.scene.children[0].scale.set(objects[i].size, objects[i].size, objects[i].size);
+                                scene.add( glb.scene.children[0] );
+                            },
+
+                            // called when loading has errors
+                            function ( error ) {
+                                console.log( 'An error happened' );
+                            }
+                        );
+                    } else {
+                        const light = new THREE.PointLight( 0xffffff, objects[i].size, 1 );
+                        const position = JSON.parse(objects[i].position);
+                        light.position.set( position.x* 0.01, 0.4, position.y*0.01 );
+                        scene.add( light );
+
+                        // const sphereSize = 0.1;
+                        // const pointLightHelper = new THREE.PointLightHelper( light, sphereSize );
+                        // scene.add( pointLightHelper );
+                    }
+                }
+
+                let floors = res.floors;
+                for(let i=0; i < floors.length; ++i) {
+                    
+                    floors[i].p1 = JSON.parse(floors[i].p1);
+                    floors[i].p2 = JSON.parse(floors[i].p2);
+                    floors[i].p3 = JSON.parse(floors[i].p3);
+                    floors[i].p4 = JSON.parse(floors[i].p4);
+
+                    const floorShape = new THREE.Shape();
+                    floorShape.moveTo( floors[i].p1.x * 0.01, floors[i].p1.y * 0.01);
+                    floorShape.lineTo( floors[i].p2.x * 0.01, floors[i].p2.y * 0.01);
+                    floorShape.lineTo( floors[i].p3.x * 0.01, floors[i].p3.y * 0.01);
+                    floorShape.lineTo( floors[i].p4.x * 0.01, floors[i].p4.y * 0.01);
+                    
+                    const floorTexture = new THREE.TextureLoader().load( `${floors[i].image_url}` );
+                    floorTexture.wrapS = THREE.RepeatWrapping;
+                    floorTexture.wrapT = THREE.RepeatWrapping;
+                    floorTexture.repeat.set( 1, 1 );
+
+                    const floorGeometry = new THREE.ShapeGeometry( floorShape );
+                    const floorMaterial = new THREE.MeshBasicMaterial( { 
+                        map: floorTexture,
+                        side: THREE.DoubleSide
+                    });
+                    const floor = new THREE.Mesh( floorGeometry, floorMaterial ) ;
+                    floor.rotateX(Math.PI * 0.5);
+                    floor.position.y = 0.01;
+                    scene.add( floor );
+                }
+
 
                 let THREEx = this.initiateDayLight();
 
@@ -318,7 +388,7 @@
 
         mounted() {
 
-            fetch( route('house.walls', this.house_id) )
+            fetch( route('house.objects', this.house_id) )
             .then(res => res.json())
             .then(res => {
                 this.initiateWEBGLContainer(res);
