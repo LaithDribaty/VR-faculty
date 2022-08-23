@@ -19746,11 +19746,150 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var vue_loading_overlay__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! vue-loading-overlay */ "./node_modules/vue-loading-overlay/dist/vue-loading.min.js");
 /* harmony import */ var vue_loading_overlay__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(vue_loading_overlay__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var vue_loading_overlay_dist_vue_loading_css__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! vue-loading-overlay/dist/vue-loading.css */ "./node_modules/vue-loading-overlay/dist/vue-loading.css");
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
 
 
 
 
 
+
+
+
+var JoyStick = /*#__PURE__*/function () {
+  function JoyStick(options) {
+    _classCallCheck(this, JoyStick);
+
+    var circle = document.createElement("div");
+    circle.style.cssText = "position:absolute; top: 10px; width:80px; height:80px; background:rgba(126, 126, 126, 0.5); border:#444 solid medium; border-radius:50%; left:50px; transform:translateX(-50%);";
+    var thumb = document.createElement("div");
+    thumb.style.cssText = "position: absolute; left: 20px; top: 20px; width: 40px; height: 40px; border-radius: 50%; background: #fff;";
+    thumb.id = "thumb";
+    circle.appendChild(thumb);
+    document.getElementById('paint').appendChild(circle);
+    this.domElement = thumb;
+    this.maxRadius = options.maxRadius || 40;
+    this.maxRadiusSquared = this.maxRadius * this.maxRadius;
+    this.onMove = options.onMove;
+    this.origin = {
+      left: this.domElement.offsetLeft,
+      top: this.domElement.offsetTop
+    };
+    this.forward = 0;
+    this.turn = 0;
+
+    if (this.domElement != undefined) {
+      var joystick = this;
+
+      if ('ontouchstart' in window) {
+        this.domElement.addEventListener('touchstart', function (evt) {
+          evt.preventDefault();
+          joystick.tap(evt);
+          evt.stopPropagation();
+        });
+      } else {
+        this.domElement.addEventListener('mousedown', function (evt) {
+          evt.preventDefault();
+          joystick.tap(evt);
+          evt.stopPropagation();
+        });
+      }
+    }
+  }
+
+  _createClass(JoyStick, [{
+    key: "getMousePosition",
+    value: function getMousePosition(evt) {
+      var clientX = evt.targetTouches ? evt.targetTouches[0].pageX : evt.clientX;
+      var clientY = evt.targetTouches ? evt.targetTouches[0].pageY : evt.clientY;
+      return {
+        x: clientX,
+        y: clientY
+      };
+    }
+  }, {
+    key: "tap",
+    value: function tap(evt) {
+      evt = evt || window.event; // get the mouse cursor position at startup:
+
+      this.offset = this.getMousePosition(evt);
+      var joystick = this;
+
+      if ('ontouchstart' in window) {
+        document.ontouchmove = function (evt) {
+          evt.preventDefault();
+          joystick.move(evt);
+        };
+
+        document.ontouchend = function (evt) {
+          evt.preventDefault();
+          joystick.up(evt);
+        };
+      } else {
+        document.onmousemove = function (evt) {
+          evt.preventDefault();
+          joystick.move(evt);
+        };
+
+        document.onmouseup = function (evt) {
+          evt.preventDefault();
+          joystick.up(evt);
+        };
+      }
+    }
+  }, {
+    key: "move",
+    value: function move(evt) {
+      evt = evt || window.event;
+      var mouse = this.getMousePosition(evt); // calculate the new cursor position:
+
+      var left = mouse.x - this.offset.x;
+      var top = mouse.y - this.offset.y; //this.offset = mouse;
+
+      var sqMag = left * left + top * top;
+
+      if (sqMag > this.maxRadiusSquared) {
+        //Only use sqrt if essential
+        var magnitude = Math.sqrt(sqMag);
+        left /= magnitude;
+        top /= magnitude;
+        left *= this.maxRadius;
+        top *= this.maxRadius;
+      } // set the element's new position:
+
+
+      this.domElement.style.top = "".concat(top + this.domElement.clientHeight / 2, "px");
+      this.domElement.style.left = "".concat(left + this.domElement.clientWidth / 2, "px");
+      var forward = -(top - this.origin.top + this.domElement.clientHeight / 2) / this.maxRadius;
+      var turn = (left - this.origin.left + this.domElement.clientWidth / 2) / this.maxRadius;
+      this.turn = turn;
+      this.forward = forward;
+    }
+  }, {
+    key: "up",
+    value: function up(evt) {
+      if ('ontouchstart' in window) {
+        document.ontouchmove = null;
+        document.touchend = null;
+      } else {
+        document.onmousemove = null;
+        document.onmouseup = null;
+      }
+
+      this.domElement.style.top = "".concat(this.origin.top, "px");
+      this.domElement.style.left = "".concat(this.origin.left, "px");
+      this.forward = 0;
+      this.turn = 0;
+      var event = new CustomEvent("joystickup", {});
+      this.domElement.dispatchEvent(event);
+    }
+  }]);
+
+  return JoyStick;
+}();
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   data: function data() {
@@ -19763,7 +19902,8 @@ __webpack_require__.r(__webpack_exports__);
       deleteState: false,
       isLoading: false,
       webgl_key: 0,
-      meshes: []
+      meshes: [],
+      joystick: null
     };
   },
   components: {
@@ -19818,8 +19958,6 @@ __webpack_require__.r(__webpack_exports__);
       for (var i = len - 1; i >= 0; --i) {
         this.meshesGroup.children[i].destroy();
       }
-
-      console.log(res);
 
       for (var _i2 = 0; _i2 < res.length; ++_i2) {
         if (!res[_i2].mesh_id) {
@@ -20288,8 +20426,8 @@ __webpack_require__.r(__webpack_exports__);
       var size = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0.1;
       var rotation = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
       var imageObj = new Image();
-      imageObj.onload = this.handleAddingImage(x, y, mesh, texture, imageObj, size, rotation);
       imageObj.src = image;
+      imageObj.onload = this.handleAddingImage(x, y, mesh, texture, imageObj, size, rotation);
     },
     handleAddingImage: function handleAddingImage(x, y, mesh, texture, imageObj, size, rotation) {
       var node = new konva__WEBPACK_IMPORTED_MODULE_0__["default"].Image({
@@ -20302,8 +20440,18 @@ __webpack_require__.r(__webpack_exports__);
         draggable: true,
         name: 'object transformable'
       });
+      var width = node.width() * size / 2;
+      var height = node.height() * size / 2;
+      var deg = rotation * Math.PI / 180;
+      node.position({
+        x: x - (width * Math.cos(deg) - height * Math.sin(deg)),
+        y: y - (width * Math.sin(deg) + height * Math.cos(deg))
+      });
       node.setAttr('mesh', mesh);
       node.setAttr('texture', texture);
+      node.on('dblclick dbltap', function () {
+        this.destroy();
+      });
       this.meshesGroup.add(node);
     },
     drawLine: function drawLine(p1, p2) {
@@ -20315,8 +20463,9 @@ __webpack_require__.r(__webpack_exports__);
       var group = new konva__WEBPACK_IMPORTED_MODULE_0__["default"].Group({
         draggable: true
       });
+      var pnts = [p1.x, p1.y, p2.x, p2.y];
       var line = new konva__WEBPACK_IMPORTED_MODULE_0__["default"].Line({
-        points: [p1.x, p1.y, p2.x, p2.y],
+        points: pnts,
         stroke: 'black',
         strokeWidth: width,
         name: 'wall-stuff object'
@@ -20327,38 +20476,57 @@ __webpack_require__.r(__webpack_exports__);
       line.on('mouseout', function () {
         this.stroke('black');
       });
-      var circle1 = new konva__WEBPACK_IMPORTED_MODULE_0__["default"].Circle({
-        x: p1.x,
-        y: p1.y,
-        radius: 5,
-        draggable: true,
-        fill: 'black',
-        name: 'wall-stuff object'
+
+      var _loop = function _loop(i) {
+        var circle = new konva__WEBPACK_IMPORTED_MODULE_0__["default"].Circle({
+          x: pnts[i * 2],
+          y: pnts[i * 2 + 1],
+          radius: 5,
+          draggable: true,
+          fill: 'black',
+          name: 'wall-stuff object'
+        });
+        circle.hitStrokeWidth(0);
+        circle.shadowForStrokeEnabled(false);
+        circle.on('dragmove', function (event) {
+          pnts[i * 2] = circle.getPosition().x;
+          pnts[i * 2 + 1] = circle.getPosition().y;
+        });
+        circle.on('mouseover', function (event) {
+          this.fill('red');
+        });
+        circle.on('mouseout', function (event) {
+          this.fill('black');
+        });
+        group.add(circle);
+      };
+
+      for (var i = 0; i < 2; ++i) {
+        _loop(i);
+      }
+
+      group.on('dragend', function (event) {
+        group.children[0].position({
+          x: group.getPosition().x + group.children[0].getPosition().x,
+          y: group.getPosition().y + group.children[0].getPosition().y
+        });
+        group.children[1].position({
+          x: group.getPosition().x + group.children[1].getPosition().x,
+          y: group.getPosition().y + group.children[1].getPosition().y
+        });
+        pnts[0] = group.children[0].getPosition().x;
+        pnts[1] = group.children[0].getPosition().y;
+        pnts[2] = group.children[1].getPosition().x;
+        pnts[3] = group.children[1].getPosition().y;
+        group.position({
+          x: 0,
+          y: 0
+        });
       });
-      circle1.hitStrokeWidth(0);
-      circle1.shadowForStrokeEnabled(false);
-      circle1.on('mouseover', function () {
-        this.fill('red');
+      group.on('dblclick dbltap', function () {
+        this.destroy();
       });
-      circle1.on('mouseout', function () {
-        this.fill('black');
-      });
-      circle1.on('dragmove', function (event) {
-        var circle1Pos = circle1.getPosition(),
-            circle2Pos = circle2.getPosition();
-        line.position(circle1Pos);
-        line.points([0, 0, circle2Pos.x - circle1Pos.x, circle2Pos.y - circle1Pos.y]);
-      });
-      var circle2 = circle1.clone({
-        x: p2.x,
-        y: p2.y
-      });
-      circle2.on('dragmove', function (event) {
-        var linePos = line.getPosition(),
-            circle2Pos = circle2.getPosition();
-        line.points([0, 0, circle2Pos.x - linePos.x, circle2Pos.y - linePos.y]);
-      });
-      group.add(line, circle1, circle2);
+      group.add(line);
       this.wallsGroup.add(group);
     },
     initiateWEBGLContainer: function initiateWEBGLContainer() {
@@ -20423,14 +20591,13 @@ __webpack_require__.r(__webpack_exports__);
         draggable: true
       });
       Group.on('mouseover', function (event) {
-        this.children[0].setOpacity(1);
+        this.children[4].setOpacity(1);
       });
       Group.on('mouseout', function (event) {
-        this.children[0].setOpacity(0.9);
+        this.children[4].setOpacity(0.9);
       });
-      Group.add(poly);
 
-      var _loop = function _loop(i) {
+      var _loop2 = function _loop2(i) {
         var circle = new konva__WEBPACK_IMPORTED_MODULE_0__["default"].Circle({
           x: pnts[i * 2],
           y: pnts[i * 2 + 1],
@@ -20455,9 +20622,29 @@ __webpack_require__.r(__webpack_exports__);
       };
 
       for (var i = 0; i < 4; ++i) {
-        _loop(i);
-      } // add the shape to the layer
+        _loop2(i);
+      }
 
+      Group.on('dragend', function (event) {
+        for (var _i4 = 0; _i4 < 4; ++_i4) {
+          Group.children[_i4].position({
+            x: Group.getPosition().x + Group.children[_i4].getPosition().x,
+            y: Group.getPosition().y + Group.children[_i4].getPosition().y
+          });
+
+          pnts[_i4 * 2] = Group.children[_i4].getPosition().x;
+          pnts[_i4 * 2 + 1] = Group.children[_i4].getPosition().y;
+        }
+
+        Group.position({
+          x: 0,
+          y: 0
+        });
+      });
+      Group.add(poly);
+      Group.on('dblclick dbltap', function () {
+        this.destroy();
+      }); // add the shape to the layer
 
       this.floorsGroup.add(Group);
     },
@@ -20484,8 +20671,8 @@ __webpack_require__.r(__webpack_exports__);
       var wallsArr = [];
 
       for (var i = 0; i < this.wallsGroup.children.length; ++i) {
-        var circle1 = this.wallsGroup.children[i].children[1].absolutePosition();
-        var circle2 = this.wallsGroup.children[i].children[2].absolutePosition();
+        var circle1 = this.wallsGroup.children[i].children[0].position();
+        var circle2 = this.wallsGroup.children[i].children[1].position();
         var el = {
           'start': circle1,
           'end': circle2
@@ -20495,27 +20682,37 @@ __webpack_require__.r(__webpack_exports__);
 
       var meshesArr = [];
 
-      for (var _i4 = 0; _i4 < this.meshesGroup.children.length; ++_i4) {
+      for (var _i5 = 0; _i5 < this.meshesGroup.children.length; ++_i5) {
+        var width = this.meshesGroup.children[_i5].width() * this.meshesGroup.children[_i5].scaleX() / 2;
+        var height = this.meshesGroup.children[_i5].height() * this.meshesGroup.children[_i5].scaleY() / 2;
+        var deg = this.meshesGroup.children[_i5].getAttr('rotation') * Math.PI / 180;
+
+        var oldPos = this.meshesGroup.children[_i5].position();
+
+        var pos = {
+          x: oldPos.x + (width * Math.cos(deg) - height * Math.sin(deg)),
+          y: oldPos.y + (width * Math.sin(deg) + height * Math.cos(deg))
+        };
         var _el = {
-          'position': this.meshesGroup.children[_i4].absolutePosition(),
-          'rotation': this.meshesGroup.children[_i4].getAttr('rotation'),
-          'mesh': this.meshesGroup.children[_i4].getAttr('mesh'),
-          'size': this.meshesGroup.children[_i4].getAttr('scaleX'),
+          'position': pos,
+          'rotation': this.meshesGroup.children[_i5].getAttr('rotation'),
+          'mesh': this.meshesGroup.children[_i5].getAttr('mesh'),
+          'size': this.meshesGroup.children[_i5].getAttr('scaleX'),
           // ratio is 1 so scaleX and scaleY is the same
-          'texture': this.meshesGroup.children[_i4].getAttr('texture')
+          'texture': this.meshesGroup.children[_i5].getAttr('texture')
         };
         meshesArr.push(_el);
       }
 
       var floorArr = [];
 
-      for (var _i5 = 0; _i5 < this.floorsGroup.children.length; ++_i5) {
+      for (var _i6 = 0; _i6 < this.floorsGroup.children.length; ++_i6) {
         var _el2 = {
-          'p1': this.floorsGroup.children[_i5].children[1].absolutePosition(),
-          'p2': this.floorsGroup.children[_i5].children[2].absolutePosition(),
-          'p3': this.floorsGroup.children[_i5].children[3].absolutePosition(),
-          'p4': this.floorsGroup.children[_i5].children[4].absolutePosition(),
-          'image_url': this.floorsGroup.children[_i5].children[0].fillPatternImage().getAttribute("src"),
+          'p1': this.floorsGroup.children[_i6].children[0].position(),
+          'p2': this.floorsGroup.children[_i6].children[1].position(),
+          'p3': this.floorsGroup.children[_i6].children[2].position(),
+          'p4': this.floorsGroup.children[_i6].children[3].position(),
+          'image_url': this.floorsGroup.children[_i6].children[4].fillPatternImage().getAttribute("src"),
           'house_id': this.house_id
         };
         floorArr.push(_el2);
@@ -20549,6 +20746,48 @@ __webpack_require__.r(__webpack_exports__);
       })["finally"](function () {
         _this5.isLoading = false;
       });
+    },
+    moveStage: function moveStage() {
+      var x = -this.joystick.turn,
+          z = this.joystick.forward; // play is how fast you want to move
+
+      var play = '';
+
+      if (x == 0 && z == 0) {
+        play = 'Idle';
+      } else if (Math.abs(x) > 0.5 || Math.abs(z) > 0.5) {
+        play = 'Run';
+      } else {
+        play = 'Walk';
+      }
+
+      var velocity = play == 'Run' ? 75 : 25;
+      var pos = this.stage.getAbsolutePosition();
+      var step = this.stage.scaleX() * velocity;
+      pos.x += x * step;
+      pos.y += z * step;
+      this.stage.position({
+        x: pos.x,
+        y: pos.y
+      });
+    },
+    test: function test() {
+      for (var i = 0; i < this.meshesGroup.children.length; ++i) {
+        console.log('here is mesh number ' + i);
+        console.log(this.meshesGroup.children[i].width());
+        console.log({
+          x: this.meshesGroup.children[i].position().x,
+          y: this.meshesGroup.children[i].position().y
+        });
+      }
+
+      console.log('================');
+
+      for (var _i7 = 0; _i7 < this.wallsGroup.children.length; ++_i7) {
+        console.log('here is wall number ' + _i7);
+        console.log(this.wallsGroup.children[_i7].children[0].position());
+        console.log(this.wallsGroup.children[_i7].children[1].position());
+      }
     }
   },
   created: function created() {},
@@ -20574,10 +20813,16 @@ __webpack_require__.r(__webpack_exports__);
       _this6.initiateWEBGLContainer();
     })["catch"](function (res) {
       _this6.$swal('Error!', 'try again later, we faced some error getting data', 'error');
-
-      console.log(res);
     })["finally"](function () {
       _this6.isLoading = false;
+    });
+    this.joystick = new JoyStick({});
+    var interval;
+    document.getElementById('thumb').addEventListener('mousedown', function (e) {
+      interval = setInterval(_this6.moveStage, 40);
+    });
+    document.getElementById('thumb').addEventListener('joystickup', function (e) {
+      clearInterval(interval);
     });
   }
 });
@@ -20676,7 +20921,7 @@ __webpack_require__.r(__webpack_exports__);
             objects[_i].position = JSON.parse(objects[_i].position);
             glb.scene.children[0].position.set(objects[_i].position.x * 0.01, 0, objects[_i].position.y * 0.01);
             glb.scene.children[0].rotation.y = -(objects[_i].rotation * Math.PI) / 180;
-            glb.scene.children[0].scale.set(objects[_i].size, objects[_i].size, objects[_i].size);
+            glb.scene.children[0].scale.set(objects[_i].size * 1.5, objects[_i].size * 1.5, objects[_i].size * 1.5);
             scene.add(glb.scene.children[0]);
           }, // called when loading has errors
           function (error) {
@@ -21382,8 +21627,11 @@ var _hoisted_13 = {
 var _hoisted_14 = {
   "class": "mx-1"
 };
+var _hoisted_15 = {
+  "class": "mx-1"
+};
 
-var _hoisted_15 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_16 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "mx-1"
   }, [/*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -21397,7 +21645,7 @@ var _hoisted_15 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_16 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_17 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "mx-1"
   }, [/*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -21411,7 +21659,7 @@ var _hoisted_16 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_17 = {
+var _hoisted_18 = {
   "class": "offcanvas offcanvas-top shadow border-0 border-bottom border-dark",
   "data-bs-scroll": "true",
   "data-bs-backdrop": "false",
@@ -21419,11 +21667,11 @@ var _hoisted_17 = {
   id: "furnatureOffcanvas",
   "aria-labelledby": "offcanvasTopLabel"
 };
-var _hoisted_18 = {
+var _hoisted_19 = {
   "class": "offcanvas-body"
 };
 
-var _hoisted_19 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_20 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "btn-close text-reset",
@@ -21434,11 +21682,11 @@ var _hoisted_19 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_20 = {
+var _hoisted_21 = {
   "class": "row p-3"
 };
 
-var _hoisted_21 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_22 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     src: "/meshes/images/light.png",
     "class": "w-100"
@@ -21447,10 +21695,10 @@ var _hoisted_21 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_22 = [_hoisted_21];
-var _hoisted_23 = ["onClick"];
-var _hoisted_24 = ["src"];
-var _hoisted_25 = {
+var _hoisted_23 = [_hoisted_22];
+var _hoisted_24 = ["onClick"];
+var _hoisted_25 = ["src"];
+var _hoisted_26 = {
   "class": "offcanvas offcanvas-top shadow border-0 border-bottom border-dark",
   "data-bs-scroll": "true",
   "data-bs-backdrop": "false",
@@ -21458,11 +21706,11 @@ var _hoisted_25 = {
   id: "floorsOffcanvas",
   "aria-labelledby": "offcanvasTopLabel"
 };
-var _hoisted_26 = {
+var _hoisted_27 = {
   "class": "offcanvas-body"
 };
 
-var _hoisted_27 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_28 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "btn-close text-reset",
@@ -21473,11 +21721,11 @@ var _hoisted_27 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_28 = {
+var _hoisted_29 = {
   "class": "row"
 };
 
-var _hoisted_29 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_30 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     src: "/images/floortexture/stone.jpeg",
     "class": "w-100"
@@ -21486,9 +21734,9 @@ var _hoisted_29 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_30 = [_hoisted_29];
+var _hoisted_31 = [_hoisted_30];
 
-var _hoisted_31 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_32 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     src: "/images/floortexture/wooden.jpg",
     "class": "w-100"
@@ -21497,12 +21745,12 @@ var _hoisted_31 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_32 = [_hoisted_31];
-var _hoisted_33 = {
+var _hoisted_33 = [_hoisted_32];
+var _hoisted_34 = {
   "class": "mx-1"
 };
 
-var _hoisted_34 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_35 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
     d: "M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"
   }, null, -1
@@ -21510,7 +21758,7 @@ var _hoisted_34 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_35 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_36 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
     "fill-rule": "evenodd",
     d: "M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
@@ -21519,11 +21767,12 @@ var _hoisted_35 = /*#__PURE__*/_withScopeId(function () {
   );
 });
 
-var _hoisted_36 = [_hoisted_34, _hoisted_35];
+var _hoisted_37 = [_hoisted_35, _hoisted_36];
 
-var _hoisted_37 = /*#__PURE__*/_withScopeId(function () {
+var _hoisted_38 = /*#__PURE__*/_withScopeId(function () {
   return /*#__PURE__*/(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    id: "paint"
+    id: "paint",
+    "class": "position-relative"
   }, null, -1
   /* HOISTED */
   );
@@ -21594,9 +21843,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "is-full-page": false
   }, null, 8
   /* PROPS */
-  , ["active"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  , ["active"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" testing "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "btn btn-primary",
     onClick: _cache[6] || (_cache[6] = function ($event) {
+      return _this.test();
+    })
+  }, " test ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" testing "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "class": "btn btn-primary",
+    onClick: _cache[7] || (_cache[7] = function ($event) {
       return _this.drawLine({
         x: 10,
         y: 10
@@ -21605,12 +21859,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         y: 10
       });
     })
-  }, " add wall ")]), _hoisted_15, _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [_hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, " add wall ")]), _hoisted_16, _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [_hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "col-3 col-md-2 col-lg-1 border border-dark shadow expand-hover p-0 mx-1",
-    onClick: _cache[7] || (_cache[7] = function ($event) {
+    onClick: _cache[8] || (_cache[8] = function ($event) {
       return _this.addMesh(20, 20, '', '', '/meshes/images/light.png');
     })
-  }, _hoisted_22), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.meshes, function (mesh) {
+  }, _hoisted_23), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.meshes, function (mesh) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       "class": "col-3 col-md-2 col-lg-1 border border-dark shadow expand-hover p-0 mx-1",
       onClick: function onClick($event) {
@@ -21621,22 +21875,22 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": "w-100 pt-4"
     }, null, 8
     /* PROPS */
-    , _hoisted_24)], 8
+    , _hoisted_25)], 8
     /* PROPS */
-    , _hoisted_23);
+    , _hoisted_24);
   }), 256
   /* UNKEYED_FRAGMENT */
-  ))])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [_hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "col-3 col-md-2 col-lg-1 border border-dark shadow expand-hover p-0 mx-1",
-    onClick: _cache[8] || (_cache[8] = function ($event) {
-      return _this.addFloor('/images/floortexture/stone.jpeg');
-    })
-  }, _hoisted_30), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  ))])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_27, [_hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "col-3 col-md-2 col-lg-1 border border-dark shadow expand-hover p-0 mx-1",
     onClick: _cache[9] || (_cache[9] = function ($event) {
+      return _this.addFloor('/images/floortexture/stone.jpeg');
+    })
+  }, _hoisted_31), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "col-3 col-md-2 col-lg-1 border border-dark shadow expand-hover p-0 mx-1",
+    onClick: _cache[10] || (_cache[10] = function ($event) {
       return _this.addFloor('/images/floortexture/wooden.jpg');
     })
-  }, _hoisted_32)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", {
+  }, _hoisted_33)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", {
     xmlns: "http://www.w3.org/2000/svg",
     width: "25",
     height: "25",
@@ -21646,12 +21900,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       'text-light': this.deleteState == false
     }]),
     viewBox: "0 0 16 16",
-    onClick: _cache[10] || (_cache[10] = function ($event) {
+    onClick: _cache[11] || (_cache[11] = function ($event) {
       return _this.deleteState = !_this.deleteState;
     })
-  }, _hoisted_36, 2
+  }, _hoisted_37, 2
   /* CLASS */
-  ))])])]), _hoisted_37])], 64
+  ))])])]), _hoisted_38])], 64
   /* STABLE_FRAGMENT */
   );
 }

@@ -52,7 +52,14 @@
 
         <nav class="navbar navbar-light bg-dark">
             <div class="nav-item">
-                
+                <!-- testing -->
+                <span class="mx-1">
+                    <button class="btn btn-primary" @click="this.test()">
+                        test
+                    </button>
+                </span>
+                <!-- testing -->
+
                 <span class="mx-1">
                     <button class="btn btn-primary" @click="this.drawLine({x: 10, y: 10}, {x: 60, y: 10})">
                         add wall
@@ -109,7 +116,9 @@
                 </span>
             </div>
         </nav>
-        <div id="paint"></div>
+        
+        <div id="paint" class="position-relative"></div>
+
     </div>
         
 
@@ -124,6 +133,108 @@
     import Loading from 'vue-loading-overlay';
     import 'vue-loading-overlay/dist/vue-loading.css';
 
+    class JoyStick{
+        constructor(options){
+            const circle = document.createElement("div");
+            circle.style.cssText = "position:absolute; top: 10px; width:80px; height:80px; background:rgba(126, 126, 126, 0.5); border:#444 solid medium; border-radius:50%; left:50px; transform:translateX(-50%);";
+            const thumb = document.createElement("div");
+            thumb.style.cssText = "position: absolute; left: 20px; top: 20px; width: 40px; height: 40px; border-radius: 50%; background: #fff;";
+            thumb.id = "thumb"
+            circle.appendChild(thumb);
+            document.getElementById('paint').appendChild(circle);
+            this.domElement = thumb;
+            this.maxRadius = options.maxRadius || 40;
+            this.maxRadiusSquared = this.maxRadius * this.maxRadius;
+            this.onMove = options.onMove;
+            this.origin = { left:this.domElement.offsetLeft, top:this.domElement.offsetTop };
+            this.forward = 0;
+            this.turn    = 0;
+
+            if (this.domElement!=undefined){
+                const joystick = this;
+                if ('ontouchstart' in window){
+                    this.domElement.addEventListener('touchstart', function(evt){ 
+                        evt.preventDefault();
+                        joystick.tap(evt);
+                        evt.stopPropagation();
+                    });
+                }else{
+                    this.domElement.addEventListener('mousedown', function(evt){ 
+                        evt.preventDefault();
+                        joystick.tap(evt);
+                        evt.stopPropagation();
+                    });
+                }
+            }
+        }
+        
+        getMousePosition(evt){
+            let clientX = evt.targetTouches ? evt.targetTouches[0].pageX : evt.clientX;
+            let clientY = evt.targetTouches ? evt.targetTouches[0].pageY : evt.clientY;
+            return { x:clientX, y:clientY };
+        }
+        
+        tap(evt){
+            evt = evt || window.event;
+            // get the mouse cursor position at startup:
+            this.offset = this.getMousePosition(evt);
+            const joystick = this;
+            if ('ontouchstart' in window){
+                document.ontouchmove = function(evt){ evt.preventDefault(); joystick.move(evt); };
+                document.ontouchend =  function(evt){ evt.preventDefault(); joystick.up(evt); };
+            }else{
+                document.onmousemove = function(evt){ evt.preventDefault(); joystick.move(evt); };
+                document.onmouseup = function(evt){ evt.preventDefault(); joystick.up(evt); };
+            }
+        }
+        
+        move(evt){
+            evt = evt || window.event;
+            const mouse = this.getMousePosition(evt);
+            // calculate the new cursor position:
+            let left = mouse.x - this.offset.x;
+            let top = mouse.y - this.offset.y;
+            //this.offset = mouse;
+            
+            const sqMag = left*left + top*top;
+            if (sqMag>this.maxRadiusSquared){
+                //Only use sqrt if essential
+                const magnitude = Math.sqrt(sqMag);
+                left /= magnitude;
+                top /= magnitude;
+                left *= this.maxRadius;
+                top *= this.maxRadius;
+            }
+            // set the element's new position:
+            this.domElement.style.top = `${top + this.domElement.clientHeight/2}px`;
+            this.domElement.style.left = `${left + this.domElement.clientWidth/2}px`;
+            
+            const forward = -(top - this.origin.top + this.domElement.clientHeight/2)/this.maxRadius;
+            const turn = (left - this.origin.left + this.domElement.clientWidth/2)/this.maxRadius;
+            
+            this.turn = turn;
+            this.forward = forward;
+        }
+        
+        up(evt){
+            if ('ontouchstart' in window){
+                document.ontouchmove = null;
+                document.touchend = null;
+            }else{
+                document.onmousemove = null;
+                document.onmouseup = null;
+            }
+            this.domElement.style.top = `${this.origin.top}px`;
+            this.domElement.style.left = `${this.origin.left}px`;
+
+            this.forward = 0;
+            this.turn    = 0;
+
+            var event = new CustomEvent("joystickup", { });
+            this.domElement.dispatchEvent(event);
+        }
+    }
+
     export default {
         data() {
             return {
@@ -135,7 +246,8 @@
                 deleteState: false,
                 isLoading: false,
                 webgl_key: 0,
-                meshes: []
+                meshes: [],
+                joystick: null
             };
         },
         
@@ -200,7 +312,6 @@
                 const len = this.meshesGroup.children.length;
                 for(let i=len-1; i>=0; --i)
                     this.meshesGroup.children[i].destroy();
-                console.log(res);
 
                 for(let i=0; i < res.length; ++i) {
                     if(!res[i].mesh_id) {
@@ -645,8 +756,8 @@
 
             addMesh(x, y, mesh, texture, image, size=0.1, rotation=0) {
                 let imageObj = new Image();
-                imageObj.onload = this.handleAddingImage(x, y, mesh, texture, imageObj, size, rotation);
                 imageObj.src = image;
+                imageObj.onload = this.handleAddingImage(x, y, mesh, texture, imageObj, size, rotation);
             },
             handleAddingImage(x, y, mesh, texture, imageObj, size, rotation) {
                 let node = new Konva.Image({
@@ -659,9 +770,25 @@
                     draggable: true,
                     name: 'object transformable'
                 });
+
+                let width = (node.width() * size)/2;
+                let height = (node.height() * size)/2;
+
+                let deg = (rotation * Math.PI) / 180;
+
+                node.position({
+                    x: x - (width * Math.cos(deg) - height * Math.sin(deg)),
+                    y: y - (width * Math.sin(deg) + height * Math.cos(deg))
+                })
+
                 node.setAttr('mesh', mesh);
                 node.setAttr('texture', texture);
-                this.meshesGroup.add(node);
+
+                node.on('dblclick dbltap', function () {
+                    this.destroy();
+                });
+
+                this.meshesGroup.add(node);                
             },
 
 
@@ -672,8 +799,9 @@
                     draggable: true
                 });
 
+                let pnts = [p1.x, p1.y, p2.x, p2.y];
                 let line = new Konva.Line({
-                    points: [p1.x, p1.y, p2.x, p2.y],
+                    points: pnts,
                     stroke: 'black',
                     strokeWidth: width,
                     name: 'wall-stuff object'
@@ -684,30 +812,51 @@
                 line.on('mouseout', function () {
                     this.stroke('black');
                 });
-
-                let circle1 = new Konva.Circle({x: p1.x, y: p1.y, radius: 5, draggable: true, fill: 'black', name: 'wall-stuff object'});
-                circle1.hitStrokeWidth(0);
-                circle1.shadowForStrokeEnabled(false);
                 
-                circle1.on('mouseover', function () {
-                    this.fill('red');
+                for(let i=0;i<2;++i) {
+                    let circle = new Konva.Circle({x: pnts[i*2], y: pnts[i*2+1], radius: 5, draggable: true, fill: 'black', name: 'wall-stuff object'});
+
+                    circle.hitStrokeWidth(0);
+                    circle.shadowForStrokeEnabled(false);
+
+                    circle.on('dragmove', function(event){
+                        pnts[i*2] = circle.getPosition().x;
+                        pnts[i*2+1] = circle.getPosition().y;
+                    });
+                    circle.on('mouseover', function(event){
+                        this.fill('red');
+                    });
+                    circle.on('mouseout', function(event){
+                        this.fill('black');
+                    });
+                    group.add(circle);
+                }
+
+                group.on('dragend', function(event){
+                    group.children[0].position({
+                        x: group.getPosition().x + group.children[0].getPosition().x,
+                        y: group.getPosition().y + group.children[0].getPosition().y,
+                    });
+                    group.children[1].position({
+                        x: group.getPosition().x + group.children[1].getPosition().x,
+                        y: group.getPosition().y + group.children[1].getPosition().y,
+                    });
+                    
+                    pnts[0] = group.children[0].getPosition().x;
+                    pnts[1] = group.children[0].getPosition().y;
+                    pnts[2] = group.children[1].getPosition().x;
+                    pnts[3] = group.children[1].getPosition().y;
+                    group.position({
+                        x:0,
+                        y:0
+                    })
                 });
-                circle1.on('mouseout', function () {
-                    this.fill('black');
+                
+                group.on('dblclick dbltap', function () {
+                    this.destroy();
                 });
 
-                circle1.on('dragmove', function(event){
-                    const circle1Pos = circle1.getPosition(), circle2Pos = circle2.getPosition();
-                    line.position(circle1Pos);
-                    line.points([0, 0, circle2Pos.x - circle1Pos.x, circle2Pos.y - circle1Pos.y])
-                });
-                let circle2 = circle1.clone({x: p2.x, y: p2.y});
-                circle2.on('dragmove', function(event){
-                    const linePos = line.getPosition(), circle2Pos = circle2.getPosition(); 
-                    line.points([0, 0, circle2Pos.x - linePos.x, circle2Pos.y - linePos.y]);
-                });
-
-                group.add(line, circle1, circle2);
+                group.add(line);
                 this.wallsGroup.add(group);
             },
             initiateWEBGLContainer() {
@@ -771,13 +920,11 @@
                 });
 
                 Group.on('mouseover', function(event) {
-                    this.children[0].setOpacity(1);
+                    this.children[4].setOpacity(1);
                 });
                 Group.on('mouseout', function(event) {                    
-                    this.children[0].setOpacity(0.9);
+                    this.children[4].setOpacity(0.9);
                 });
-                
-                Group.add(poly);
 
                 for(let i=0;i<4;++i) {
                     let circle = new Konva.Circle({x: pnts[i*2], y: pnts[i*2+1], radius: 2, draggable: true, fill: 'black', name: 'wall-stuff object'});
@@ -798,6 +945,27 @@
                     Group.add(circle);
                 }
 
+                Group.on('dragend', function(event){
+                    for(let i=0;i<4;++i) {                    
+                        Group.children[i].position({
+                            x: Group.getPosition().x + Group.children[i].getPosition().x,
+                            y: Group.getPosition().y + Group.children[i].getPosition().y,
+                        });
+                        pnts[i*2] = Group.children[i].getPosition().x;
+                        pnts[i*2+1] = Group.children[i].getPosition().y;
+                    }
+                    Group.position({
+                        x:0,
+                        y:0
+                    })
+                });
+
+                Group.add(poly);
+
+                Group.on('dblclick dbltap', function () {
+                    this.destroy();
+                });
+                
                 // add the shape to the layer
                 this.floorsGroup.add(Group);
             },
@@ -821,8 +989,8 @@
             saveWallsAndMeshes() {
                 let wallsArr = [];
                 for(let i=0; i < this.wallsGroup.children.length; ++i) {
-                    let circle1 = this.wallsGroup.children[i].children[1].absolutePosition();
-                    let circle2 = this.wallsGroup.children[i].children[2].absolutePosition();
+                    let circle1 = this.wallsGroup.children[i].children[0].position();
+                    let circle2 = this.wallsGroup.children[i].children[1].position();
                     let el = {
                         'start': circle1,
                         'end': circle2
@@ -832,8 +1000,20 @@
 
                 let meshesArr = [];
                 for(let i=0; i < this.meshesGroup.children.length; ++i) {
+
+                    let width = ( this.meshesGroup.children[i].width() * this.meshesGroup.children[i].scaleX() ) / 2;
+                    let height = ( this.meshesGroup.children[i].height() * this.meshesGroup.children[i].scaleY() ) / 2;
+
+                    let deg = (this.meshesGroup.children[i].getAttr('rotation') * Math.PI) / 180;
+                    let oldPos = this.meshesGroup.children[i].position();
+
+                    let pos = {
+                        x: oldPos.x + (width * Math.cos(deg) - height * Math.sin(deg)),
+                        y: oldPos.y + (width * Math.sin(deg) + height * Math.cos(deg))
+                    };
+
                     let el = {
-                        'position': this.meshesGroup.children[i].absolutePosition(),
+                        'position': pos,
                         'rotation': this.meshesGroup.children[i].getAttr('rotation'),
                         'mesh': this.meshesGroup.children[i].getAttr('mesh'),
                         'size': this.meshesGroup.children[i].getAttr('scaleX'), // ratio is 1 so scaleX and scaleY is the same
@@ -845,11 +1025,11 @@
                 let floorArr = [];
                 for(let i=0; i < this.floorsGroup.children.length; ++i) {
                     let el = {
-                        'p1': this.floorsGroup.children[i].children[1].absolutePosition(),
-                        'p2': this.floorsGroup.children[i].children[2].absolutePosition(),
-                        'p3': this.floorsGroup.children[i].children[3].absolutePosition(),
-                        'p4': this.floorsGroup.children[i].children[4].absolutePosition(),
-                        'image_url': this.floorsGroup.children[i].children[0].fillPatternImage().getAttribute("src"),
+                        'p1': this.floorsGroup.children[i].children[0].position(),
+                        'p2': this.floorsGroup.children[i].children[1].position(),
+                        'p3': this.floorsGroup.children[i].children[2].position(),
+                        'p4': this.floorsGroup.children[i].children[3].position(),
+                        'image_url': this.floorsGroup.children[i].children[4].fillPatternImage().getAttribute("src"),
                         'house_id': this.house_id
                     }
                     floorArr.push(el);
@@ -890,10 +1070,53 @@
                     this.isLoading = false;
                 });
             },
+
+
+            moveStage() 
+            {
+                let x = -this.joystick.turn, z = this.joystick.forward;
+
+                // play is how fast you want to move
+                var play = '';
+                if (x==0 && z==0) {
+                    play = 'Idle'
+                } else if(Math.abs(x) > 0.5 || Math.abs(z) > 0.5) {
+                    play = 'Run'
+                } else {
+                    play = 'Walk'
+                }
+                const velocity = play == 'Run' ? 75 : 25;
+                
+                let pos = this.stage.getAbsolutePosition();
+                let step = this.stage.scaleX() * velocity;
+                pos.x += x * step;
+                pos.y += z * step;
+
+                this.stage.position({
+                    x: pos.x,
+                    y: pos.y
+                });
+            },
+
+            test() {
+                for(let i=0;i<this.meshesGroup.children.length; ++i) {
+                    console.log('here is mesh number ' + i);
+                    console.log(this.meshesGroup.children[i].width());
+                    console.log({x: this.meshesGroup.children[i].position().x,
+                        y: this.meshesGroup.children[i].position().y });
+                }
+                console.log('================');
+                for(let i=0;i<this.wallsGroup.children.length; ++i) {
+                    console.log('here is wall number ' + i);
+                    console.log(this.wallsGroup.children[i].children[0].position());
+                    console.log(this.wallsGroup.children[i].children[1].position());
+                }
+            }
         },
 
         created() {
             
+
         },
 
         mounted() {
@@ -921,10 +1144,20 @@
                     'try again later, we faced some error getting data',
                     'error',
                 )
-                console.log(res);
             })
             .finally(()=>{
                 this.isLoading = false;
+            });
+
+            this.joystick = new JoyStick({ });
+
+            let interval;
+            document.getElementById('thumb').addEventListener('mousedown', (e) => {
+                interval = setInterval(this.moveStage, 40);
+            });
+
+            document.getElementById('thumb').addEventListener('joystickup', (e) => {
+                clearInterval(interval);
             });
         }
     };

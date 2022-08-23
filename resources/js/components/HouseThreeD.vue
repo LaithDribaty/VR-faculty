@@ -100,7 +100,7 @@
                                 objects[i].position = JSON.parse(objects[i].position);
                                 glb.scene.children[0].position.set(objects[i].position.x * 0.01, 0, objects[i].position.y * 0.01);
                                 glb.scene.children[0].rotation.y = -(objects[i].rotation * Math.PI) / 180;
-                                glb.scene.children[0].scale.set(objects[i].size, objects[i].size, objects[i].size);
+                                glb.scene.children[0].scale.set(objects[i].size * 1.5, objects[i].size * 1.5, objects[i].size * 1.5);
                                 scene.add( glb.scene.children[0] );
                             },
 
